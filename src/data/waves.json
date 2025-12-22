@@ -1,0 +1,298 @@
+{
+  "waves": [
+    {
+      "waveId": 1,
+      "name": "Training Orbit",
+      "grid": {
+        "rows": 3,
+        "cols": 8,
+        "layout": [
+          ["raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor"],
+          ["raptor", "raptor", "ptero", "raptor", "raptor", "ptero", "raptor", "raptor"],
+          ["raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor"]
+        ]
+      },
+      "marchSpeed": 30,
+      "descentRate": 30,
+      "bulletFrequency": 0.3,
+      "pinball": {
+        "bumpers": [
+          { "x": 150, "y": 400 },
+          { "x": 400, "y": 380 },
+          { "x": 650, "y": 400 }
+        ],
+        "wormholes": []
+      },
+      "dropRates": {
+        "timedPowerup": 0.15,
+        "mutation": 0.05
+      }
+    },
+    {
+      "waveId": 2,
+      "name": "Asteroid Garden",
+      "grid": {
+        "rows": 3,
+        "cols": 8,
+        "layout": [
+          ["raptor", "ptero", "raptor", "raptor", "raptor", "raptor", "ptero", "raptor"],
+          ["raptor", "raptor", "raptor", "trike", "trike", "raptor", "raptor", "raptor"],
+          ["ptero", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "ptero"]
+        ]
+      },
+      "marchSpeed": 35,
+      "descentRate": 30,
+      "bulletFrequency": 0.4,
+      "pinball": {
+        "bumpers": [
+          { "x": 200, "y": 400 },
+          { "x": 400, "y": 360 },
+          { "x": 600, "y": 400 }
+        ],
+        "wormholes": []
+      },
+      "dropRates": {
+        "timedPowerup": 0.18,
+        "mutation": 0.06
+      }
+    },
+    {
+      "waveId": 3,
+      "name": "Wormhole Peekaboo",
+      "grid": {
+        "rows": 4,
+        "cols": 8,
+        "layout": [
+          ["raptor", "raptor", "ptero", "raptor", "raptor", "ptero", "raptor", "raptor"],
+          ["raptor", "trike", "raptor", "raptor", "raptor", "raptor", "trike", "raptor"],
+          ["ptero", "raptor", "raptor", "ptero", "ptero", "raptor", "raptor", "ptero"],
+          ["raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor"]
+        ]
+      },
+      "marchSpeed": 40,
+      "descentRate": 35,
+      "bulletFrequency": 0.45,
+      "pinball": {
+        "bumpers": [
+          { "x": 400, "y": 380 }
+        ],
+        "wormholes": [
+          { "x1": 100, "y1": 420, "x2": 700, "y2": 420 }
+        ]
+      },
+      "dropRates": {
+        "timedPowerup": 0.20,
+        "mutation": 0.08
+      }
+    },
+    {
+      "waveId": 4,
+      "name": "Spitter Rain",
+      "grid": {
+        "rows": 4,
+        "cols": 8,
+        "layout": [
+          ["ptero", "ptero", "ptero", "ptero", "ptero", "ptero", "ptero", "ptero"],
+          ["raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor"],
+          ["ptero", "raptor", "ptero", "raptor", "raptor", "ptero", "raptor", "ptero"],
+          ["raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor"]
+        ]
+      },
+      "marchSpeed": 45,
+      "descentRate": 35,
+      "bulletFrequency": 0.6,
+      "pinball": {
+        "bumpers": [
+          { "x": 250, "y": 400 },
+          { "x": 550, "y": 400 }
+        ],
+        "wormholes": []
+      },
+      "dropRates": {
+        "timedPowerup": 0.22,
+        "mutation": 0.08
+      }
+    },
+    {
+      "waveId": 5,
+      "name": "Armor Row",
+      "grid": {
+        "rows": 4,
+        "cols": 8,
+        "layout": [
+          ["trike", "trike", "trike", "trike", "trike", "trike", "trike", "trike"],
+          ["raptor", "ptero", "raptor", "raptor", "raptor", "raptor", "ptero", "raptor"],
+          ["raptor", "raptor", "ptero", "raptor", "raptor", "ptero", "raptor", "raptor"],
+          ["ptero", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "ptero"]
+        ]
+      },
+      "marchSpeed": 45,
+      "descentRate": 40,
+      "bulletFrequency": 0.5,
+      "pinball": {
+        "bumpers": [
+          { "x": 200, "y": 420 },
+          { "x": 600, "y": 420 }
+        ],
+        "wormholes": [
+          { "x1": 100, "y1": 380, "x2": 700, "y2": 380 }
+        ]
+      },
+      "dropRates": {
+        "timedPowerup": 0.20,
+        "mutation": 0.10
+      }
+    },
+    {
+      "waveId": 6,
+      "name": "Pinball Lane",
+      "grid": {
+        "rows": 3,
+        "cols": 8,
+        "layout": [
+          ["raptor", "raptor", "trike", "raptor", "raptor", "trike", "raptor", "raptor"],
+          ["ptero", "raptor", "raptor", "ptero", "ptero", "raptor", "raptor", "ptero"],
+          ["raptor", "trike", "raptor", "raptor", "raptor", "raptor", "trike", "raptor"]
+        ]
+      },
+      "marchSpeed": 50,
+      "descentRate": 40,
+      "bulletFrequency": 0.5,
+      "pinball": {
+        "bumpers": [
+          { "x": 150, "y": 280 },
+          { "x": 300, "y": 350 },
+          { "x": 500, "y": 350 },
+          { "x": 650, "y": 280 }
+        ],
+        "wormholes": [
+          { "x1": 100, "y1": 400, "x2": 700, "y2": 400 }
+        ]
+      },
+      "dropRates": {
+        "timedPowerup": 0.22,
+        "mutation": 0.10
+      }
+    },
+    {
+      "waveId": 7,
+      "name": "Slow-Mo Fossil",
+      "grid": {
+        "rows": 4,
+        "cols": 8,
+        "layout": [
+          ["raptor", "ptero", "raptor", "trike", "trike", "raptor", "ptero", "raptor"],
+          ["ptero", "raptor", "ptero", "raptor", "raptor", "ptero", "raptor", "ptero"],
+          ["raptor", "raptor", "raptor", "ptero", "ptero", "raptor", "raptor", "raptor"],
+          ["trike", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "trike"]
+        ]
+      },
+      "marchSpeed": 55,
+      "descentRate": 45,
+      "bulletFrequency": 0.55,
+      "pinball": {
+        "bumpers": [
+          { "x": 400, "y": 300 }
+        ],
+        "wormholes": []
+      },
+      "dropRates": {
+        "timedPowerup": 0.30,
+        "mutation": 0.10
+      },
+      "specialDrops": ["SLOW"]
+    },
+    {
+      "waveId": 8,
+      "name": "Multi-Egg Mayhem",
+      "grid": {
+        "rows": 4,
+        "cols": 8,
+        "layout": [
+          ["ptero", "raptor", "ptero", "raptor", "raptor", "ptero", "raptor", "ptero"],
+          ["raptor", "trike", "raptor", "ptero", "ptero", "raptor", "trike", "raptor"],
+          ["ptero", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "ptero"],
+          ["raptor", "raptor", "trike", "raptor", "raptor", "trike", "raptor", "raptor"]
+        ]
+      },
+      "marchSpeed": 55,
+      "descentRate": 45,
+      "bulletFrequency": 0.6,
+      "pinball": {
+        "bumpers": [
+          { "x": 250, "y": 320 },
+          { "x": 550, "y": 320 }
+        ],
+        "wormholes": [
+          { "x1": 150, "y1": 380, "x2": 650, "y2": 380 }
+        ]
+      },
+      "dropRates": {
+        "timedPowerup": 0.28,
+        "mutation": 0.12
+      },
+      "specialDrops": ["MULTI"]
+    },
+    {
+      "waveId": 9,
+      "name": "Gravity Drift",
+      "grid": {
+        "rows": 5,
+        "cols": 8,
+        "layout": [
+          ["trike", "raptor", "ptero", "raptor", "raptor", "ptero", "raptor", "trike"],
+          ["raptor", "ptero", "raptor", "trike", "trike", "raptor", "ptero", "raptor"],
+          ["ptero", "raptor", "raptor", "raptor", "raptor", "raptor", "raptor", "ptero"],
+          ["raptor", "raptor", "ptero", "raptor", "raptor", "ptero", "raptor", "raptor"],
+          ["trike", "raptor", "raptor", "ptero", "ptero", "raptor", "raptor", "trike"]
+        ]
+      },
+      "marchSpeed": 60,
+      "descentRate": 50,
+      "bulletFrequency": 0.65,
+      "pinball": {
+        "bumpers": [
+          { "x": 200, "y": 350 },
+          { "x": 400, "y": 280 },
+          { "x": 600, "y": 350 }
+        ],
+        "wormholes": [
+          { "x1": 100, "y1": 420, "x2": 700, "y2": 420 }
+        ],
+        "gravityWells": [
+          { "x": 400, "y": 350, "strength": 50 }
+        ]
+      },
+      "dropRates": {
+        "timedPowerup": 0.25,
+        "mutation": 0.12
+      }
+    },
+    {
+      "waveId": 10,
+      "name": "Mothership Rex",
+      "isBoss": true,
+      "boss": {
+        "type": "mothershipRex",
+        "hp": 15,
+        "weakPoints": 3,
+        "phases": [
+          { "hpThreshold": 15, "pattern": "spray", "speed": 1.0 },
+          { "hpThreshold": 10, "pattern": "burst", "speed": 1.2 },
+          { "hpThreshold": 5, "pattern": "aimed", "speed": 1.5 }
+        ]
+      },
+      "pinball": {
+        "bumpers": [
+          { "x": 200, "y": 400 },
+          { "x": 600, "y": 400 }
+        ],
+        "wormholes": []
+      },
+      "dropRates": {
+        "timedPowerup": 0.20,
+        "mutation": 0.15
+      }
+    }
+  ]
+}

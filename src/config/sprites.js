@@ -25,7 +25,7 @@ export const SPRITES = {
       height: 40,
       label: 'R',
       hp: 1,
-      shootChance: 0.002,
+      shootChance: 0.0002, // Reduced 10x for easier gameplay
     },
     ptero: {
       type: 'rect',
@@ -34,7 +34,7 @@ export const SPRITES = {
       height: 40,
       label: 'P',
       hp: 1,
-      shootChance: 0.008,
+      shootChance: 0.0008, // Reduced 10x for easier gameplay
     },
     trike: {
       type: 'rect',
@@ -43,7 +43,7 @@ export const SPRITES = {
       height: 40,
       label: 'T',
       hp: 2,
-      shootChance: 0.004,
+      shootChance: 0.0004, // Reduced 10x for easier gameplay
     },
   },
 
@@ -56,14 +56,14 @@ export const SPRITES = {
 
   bumper: {
     type: 'circle',
-    color: 0x888888,
-    radius: 25,
+    color: 0xff00ff, // Bright magenta
+    radius: 35,
   },
 
   wormhole: {
     type: 'circle',
-    color: 0x8800ff,
-    radius: 30,
+    color: 0x00ffff, // Bright cyan
+    radius: 35,
   },
 
   drops: {

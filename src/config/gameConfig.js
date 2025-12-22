@@ -19,7 +19,7 @@ export const PADDLE = {
 
 export const EGG = {
   radius: 10,
-  speed: 300,
+  speed: 280, // Slightly slower to prevent tunneling
 };
 
 export const DINO = {
@@ -34,7 +34,7 @@ export const DINO = {
 export const BULLET = {
   width: 8,
   height: 16,
-  speed: 200,
+  speed: 120, // Slowed down for easier dodging
 };
 
 export const EARTH_LINE_Y = 560; // dinos lose heart if they reach here

@@ -16,7 +16,12 @@ const config = {
     default: 'arcade',
     arcade: {
       debug: false,
+      fps: 120, // Higher physics rate to prevent tunneling
     },
+  },
+  fps: {
+    target: 60,
+    forceSetTimeOut: true,
   },
   scene: [BootScene, MenuScene, GameScene, PauseScene, GameOverScene],
 };
