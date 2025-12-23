@@ -1,6 +1,6 @@
 // src/entities/Paddle.js
 import Phaser from 'phaser';
-import { GAME_WIDTH, PADDLE } from '../config/gameConfig.js';
+import { GAME_WIDTH, GAME_HEIGHT, PADDLE } from '../config/gameConfig.js';
 
 export class Paddle {
   constructor(scene) {
@@ -27,6 +27,10 @@ export class Paddle {
       right: Phaser.Input.Keyboard.KeyCodes.D,
     });
     this.shiftKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+
+    // Touch controls
+    this.touchMoving = 0; // -1 left, 0 none, 1 right
+    this.setupTouchControls();
 
     // Dash ability
     this.dashCooldown = 0;
@@ -91,10 +95,10 @@ export class Paddle {
         body.setVelocityX(0);
       }
     } else {
-      // Normal movement
+      // Normal movement (keyboard or touch)
       const currentSpeed = this.getCurrentSpeed();
-      const movingLeft = this.cursors.left.isDown || this.wasd.left.isDown;
-      const movingRight = this.cursors.right.isDown || this.wasd.right.isDown;
+      const movingLeft = this.cursors.left.isDown || this.wasd.left.isDown || this.touchMoving === -1;
+      const movingRight = this.cursors.right.isDown || this.wasd.right.isDown || this.touchMoving === 1;
 
       // Check for dash input (Shift + direction)
       if (this.shiftKey.isDown && this.dashCooldown <= 0) {
@@ -311,6 +315,95 @@ export class Paddle {
       return true; // Tile destroyed
     }
     return false;
+  }
+
+  setupTouchControls() {
+    const scene = this.scene;
+
+    // Create invisible touch zones
+    const zoneHeight = 150;
+    const zoneWidth = GAME_WIDTH / 3;
+
+    // Left touch zone
+    this.leftZone = scene.add.rectangle(zoneWidth / 2, GAME_HEIGHT - zoneHeight / 2, zoneWidth, zoneHeight, 0x0000ff, 0)
+      .setInteractive()
+      .setDepth(100);
+
+    // Right touch zone
+    this.rightZone = scene.add.rectangle(GAME_WIDTH - zoneWidth / 2, GAME_HEIGHT - zoneHeight / 2, zoneWidth, zoneHeight, 0xff0000, 0)
+      .setInteractive()
+      .setDepth(100);
+
+    // Center zone (for launch/dash)
+    this.centerZone = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - zoneHeight / 2, zoneWidth, zoneHeight, 0x00ff00, 0)
+      .setInteractive()
+      .setDepth(100);
+
+    // Visual indicators (semi-transparent)
+    this.leftIndicator = scene.add.text(50, GAME_HEIGHT - 40, '◀', {
+      fontSize: '40px',
+      color: '#ffffff',
+    }).setAlpha(0.3).setDepth(101);
+
+    this.rightIndicator = scene.add.text(GAME_WIDTH - 70, GAME_HEIGHT - 40, '▶', {
+      fontSize: '40px',
+      color: '#ffffff',
+    }).setAlpha(0.3).setDepth(101);
+
+    this.centerIndicator = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 35, '▲', {
+      fontSize: '32px',
+      color: '#ffff00',
+    }).setOrigin(0.5).setAlpha(0.3).setDepth(101);
+
+    // Touch events
+    this.leftZone.on('pointerdown', () => {
+      this.touchMoving = -1;
+      this.leftIndicator.setAlpha(0.8);
+    });
+    this.leftZone.on('pointerup', () => {
+      this.touchMoving = 0;
+      this.leftIndicator.setAlpha(0.3);
+    });
+    this.leftZone.on('pointerout', () => {
+      this.touchMoving = 0;
+      this.leftIndicator.setAlpha(0.3);
+    });
+
+    this.rightZone.on('pointerdown', () => {
+      this.touchMoving = 1;
+      this.rightIndicator.setAlpha(0.8);
+    });
+    this.rightZone.on('pointerup', () => {
+      this.touchMoving = 0;
+      this.rightIndicator.setAlpha(0.3);
+    });
+    this.rightZone.on('pointerout', () => {
+      this.touchMoving = 0;
+      this.rightIndicator.setAlpha(0.3);
+    });
+
+    // Center tap for launch
+    this.centerZone.on('pointerdown', () => {
+      this.centerIndicator.setAlpha(0.8);
+      // Trigger launch in GameScene
+      if (scene.launchEgg) {
+        scene.launchEgg();
+      }
+    });
+    this.centerZone.on('pointerup', () => {
+      this.centerIndicator.setAlpha(0.3);
+    });
+
+    // Also allow dragging paddle directly
+    scene.input.on('pointermove', (pointer) => {
+      if (pointer.isDown && pointer.y > GAME_HEIGHT - 200) {
+        // Move paddle toward touch X position
+        const dx = pointer.x - this.gameObject.x;
+        if (Math.abs(dx) > 10) {
+          this.touchMoving = dx > 0 ? 1 : -1;
+        }
+      }
+    });
   }
 
   get x() { return this.gameObject.x; }
