@@ -117,6 +117,10 @@ class StorageManagerClass {
     return !!this.data.achievements[id];
   }
 
+  getUnlockedAchievements() {
+    return Object.keys(this.data.achievements);
+  }
+
   // Skins
   getUnlockedSkins() {
     return this.data.unlockedSkins;

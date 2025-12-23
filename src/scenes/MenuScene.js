@@ -5,6 +5,7 @@ import { DIFFICULTY, DIFFICULTY_ORDER } from '../config/difficulty.js';
 import { Starfield } from '../entities/Starfield.js';
 import { soundManager } from '../systems/SoundManager.js';
 import { storageManager } from '../systems/StorageManager.js';
+import { EGG_SKINS, ACHIEVEMENTS } from '../config/achievements.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -108,6 +109,9 @@ export class MenuScene extends Phaser.Scene {
     // Sound toggle button (top right)
     this.createSoundToggle();
 
+    // Egg skin selector
+    this.createSkinSelector();
+
     // Floating dino decoration
     this.createFloatingDino();
   }
@@ -122,6 +126,128 @@ export class MenuScene extends Phaser.Scene {
       const newState = storageManager.toggleSetting('soundEnabled');
       this.soundBtn.setText(newState ? '🔊' : '🔇');
       soundManager.setEnabled(newState);
+    });
+  }
+
+  createSkinSelector() {
+    const unlockedAchievements = storageManager.getUnlockedAchievements();
+    const selectedSkin = storageManager.getSelectedSkin();
+    const skinKeys = Object.keys(EGG_SKINS);
+
+    // Position on left side
+    const startX = 60;
+    const startY = 200;
+
+    this.add.text(startX, startY - 25, 'EGG SKIN', {
+      fontSize: '14px',
+      fontFamily: 'Arial Black',
+      color: '#888888',
+    });
+
+    this.skinButtons = [];
+    const iconSize = 32;
+    const padding = 8;
+
+    skinKeys.forEach((skinId, index) => {
+      const skin = EGG_SKINS[skinId];
+      const x = startX + (index % 3) * (iconSize + padding);
+      const y = startY + Math.floor(index / 3) * (iconSize + padding);
+
+      // Check if skin is unlocked
+      const isUnlocked = skin.unlocked ||
+        (skin.requirement && unlockedAchievements.includes(skin.requirement));
+      const isSelected = skinId === selectedSkin;
+
+      // Background circle
+      const bg = this.add.circle(x, y, iconSize / 2 + 4, 0x333333);
+      if (isSelected) {
+        bg.setStrokeStyle(3, 0x00ff88);
+      } else if (isUnlocked) {
+        bg.setStrokeStyle(2, 0x666666);
+      }
+
+      // Egg preview (use generated texture)
+      const textureKey = `egg_${skinId}`;
+      const egg = this.add.sprite(x, y, textureKey);
+      egg.setScale(1.2);
+
+      // Lock overlay if not unlocked
+      if (!isUnlocked) {
+        egg.setAlpha(0.3);
+        const lock = this.add.text(x, y, '🔒', {
+          fontSize: '14px',
+        }).setOrigin(0.5);
+      }
+
+      // Make interactive if unlocked
+      if (isUnlocked) {
+        bg.setInteractive({ useHandCursor: true });
+
+        bg.on('pointerover', () => {
+          if (skinId !== storageManager.getSelectedSkin()) {
+            bg.setStrokeStyle(2, 0xffffff);
+          }
+          // Show skin name tooltip
+          this.showSkinTooltip(x, y - 30, skin.name);
+        });
+
+        bg.on('pointerout', () => {
+          if (skinId !== storageManager.getSelectedSkin()) {
+            bg.setStrokeStyle(2, 0x666666);
+          }
+          this.hideSkinTooltip();
+        });
+
+        bg.on('pointerdown', () => {
+          this.selectSkin(skinId);
+          soundManager.init();
+          soundManager.playPaddleHit();
+        });
+      } else {
+        // Show requirement on hover for locked skins
+        bg.setInteractive({ useHandCursor: false });
+        bg.on('pointerover', () => {
+          const req = ACHIEVEMENTS[skin.requirement];
+          const tooltip = req ? `Unlock: ${req.name}` : 'Locked';
+          this.showSkinTooltip(x, y - 30, tooltip);
+        });
+        bg.on('pointerout', () => {
+          this.hideSkinTooltip();
+        });
+      }
+
+      this.skinButtons.push({ bg, egg, skinId, isUnlocked });
+    });
+  }
+
+  showSkinTooltip(x, y, text) {
+    this.hideSkinTooltip();
+    this.skinTooltip = this.add.text(x, y, text, {
+      fontSize: '11px',
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      backgroundColor: '#000000',
+      padding: { x: 4, y: 2 },
+    }).setOrigin(0.5);
+  }
+
+  hideSkinTooltip() {
+    if (this.skinTooltip) {
+      this.skinTooltip.destroy();
+      this.skinTooltip = null;
+    }
+  }
+
+  selectSkin(skinId) {
+    storageManager.selectSkin(skinId);
+
+    // Update visual selection
+    this.skinButtons.forEach(btn => {
+      if (btn.skinId === skinId) {
+        btn.bg.setStrokeStyle(3, 0x00ff88);
+      } else if (btn.isUnlocked) {
+        btn.bg.setStrokeStyle(2, 0x666666);
+      }
     });
   }
 

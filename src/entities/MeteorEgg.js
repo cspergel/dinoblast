@@ -1,6 +1,8 @@
 // src/entities/MeteorEgg.js
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, EGG, PADDLE } from '../config/gameConfig.js';
+import { storageManager } from '../systems/StorageManager.js';
+import { EGG_SKINS } from '../config/achievements.js';
 
 export class MeteorEgg {
   constructor(scene, x, y) {
@@ -9,8 +11,18 @@ export class MeteorEgg {
     this.piercing = false; // From Comet Core powerup
     this.stuck = false; // From Magnet mutation
 
-    // Create egg sprite
-    this.gameObject = scene.add.sprite(x, y, 'egg');
+    // Get selected skin
+    this.skinId = storageManager.getSelectedSkin();
+    this.skinConfig = EGG_SKINS[this.skinId] || EGG_SKINS.default;
+
+    // Create egg sprite with selected skin
+    const textureKey = `egg_${this.skinId}`;
+    this.gameObject = scene.add.sprite(x, y, textureKey);
+
+    // Rainbow skin special effect
+    if (this.skinConfig.special === 'rainbow') {
+      this.rainbowHue = 0;
+    }
 
     // Enable physics
     scene.physics.add.existing(this.gameObject);
@@ -77,6 +89,15 @@ export class MeteorEgg {
         this.gameObject.clearTint();
         this.gameObject.body.setMaxVelocity(400, 400);
       }
+    }
+  }
+
+  update(delta) {
+    // Rainbow skin color cycling
+    if (this.skinConfig.special === 'rainbow' && !this.piercing) {
+      this.rainbowHue = (this.rainbowHue + delta * 0.2) % 360;
+      const color = Phaser.Display.Color.HSLToColor(this.rainbowHue / 360, 1, 0.5);
+      this.gameObject.setTint(color.color);
     }
   }
 

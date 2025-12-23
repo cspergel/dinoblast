@@ -230,10 +230,7 @@ export class GameScene extends Phaser.Scene {
     // Sound toggle in game
     this.createSoundToggle();
 
-    // Tutorial overlay (first time)
-    if (!this.tutorialSeen) {
-      this.showTutorial();
-    }
+    // Tutorial removed - was annoying
 
     // Daily challenge indicator
     if (this.isDailyChallenge) {
@@ -1289,6 +1286,10 @@ export class GameScene extends Phaser.Scene {
       // Update power shot piercing timer
       if (egg.updatePowerShot) {
         egg.updatePowerShot(delta);
+      }
+      // Update egg skin effects (rainbow cycling)
+      if (egg.update) {
+        egg.update(delta);
       }
     });
 

@@ -20,8 +20,8 @@ export class BootScene extends Phaser.Scene {
     // Paddle - sleek spaceship shape
     this.generatePaddleTexture();
 
-    // Egg/Ball - glowing meteor
-    this.generateEggTexture();
+    // Egg/Ball - glowing meteor (all skins)
+    this.generateEggTextures();
 
     // Dinos
     this.generateDinoTextures();
@@ -63,27 +63,45 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
-  generateEggTexture() {
+  generateEggTextures() {
+    const skins = {
+      default: { main: 0xffcc00, glow: 0xff8800, core: 0xffff88 },
+      ice: { main: 0x88ffff, glow: 0x00ffff, core: 0xffffff },
+      fire: { main: 0xff4400, glow: 0xff0000, core: 0xffff00 },
+      rainbow: { main: 0xffffff, glow: 0xff00ff, core: 0xffffff },
+      gold: { main: 0xffd700, glow: 0xffaa00, core: 0xffffcc },
+      void: { main: 0x440088, glow: 0x8800ff, core: 0xaa44ff },
+    };
+
+    Object.entries(skins).forEach(([skinId, colors]) => {
+      this.generateSingleEggTexture(`egg_${skinId}`, colors);
+    });
+
+    // Default egg texture (for backwards compatibility)
+    this.generateSingleEggTexture('egg', skins.default);
+  }
+
+  generateSingleEggTexture(key, colors) {
     const g = this.make.graphics({ x: 0, y: 0, add: false });
     const r = 12;
 
     // Outer glow
-    g.fillStyle(0xff8800, 0.3);
+    g.fillStyle(colors.glow, 0.3);
     g.fillCircle(r, r, r);
 
     // Main meteor body
-    g.fillStyle(0xffcc00);
+    g.fillStyle(colors.main);
     g.fillCircle(r, r, r - 2);
 
     // Inner core
-    g.fillStyle(0xffff88);
+    g.fillStyle(colors.core);
     g.fillCircle(r - 2, r - 2, r - 5);
 
     // Hot spot
     g.fillStyle(0xffffff);
     g.fillCircle(r - 3, r - 3, 3);
 
-    g.generateTexture('egg', r * 2, r * 2);
+    g.generateTexture(key, r * 2, r * 2);
     g.destroy();
   }
 
