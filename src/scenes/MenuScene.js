@@ -4,6 +4,7 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../config/gameConfig.js';
 import { DIFFICULTY, DIFFICULTY_ORDER } from '../config/difficulty.js';
 import { Starfield } from '../entities/Starfield.js';
 import { soundManager } from '../systems/SoundManager.js';
+import { storageManager } from '../systems/StorageManager.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -76,16 +77,63 @@ export class MenuScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-LEFT', () => this.changeDifficulty(-1));
     this.input.keyboard.on('keydown-RIGHT', () => this.changeDifficulty(1));
 
+    // Daily Challenge button
+    const dailyBtn = this.add.text(GAME_WIDTH / 2, 470, '[ DAILY CHALLENGE ]', {
+      fontSize: '20px',
+      fontFamily: 'Arial',
+      color: '#ff8800',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    dailyBtn.on('pointerover', () => dailyBtn.setColor('#ffffff'));
+    dailyBtn.on('pointerout', () => dailyBtn.setColor('#ff8800'));
+    dailyBtn.on('pointerdown', () => this.startDailyChallenge());
+
+    // High Score display
+    const highScore = storageManager.getHighScore();
+    const highWave = storageManager.getHighWave();
+    this.add.text(GAME_WIDTH / 2, 520, `HIGH SCORE: ${highScore}  |  BEST WAVE: ${highWave}`, {
+      fontSize: '16px',
+      fontFamily: 'Arial Black',
+      color: '#ffcc00',
+    }).setOrigin(0.5);
+
     // Instructions
-    this.add.text(GAME_WIDTH / 2, 520, 'Arrow Keys / A,D = Move   |   Space = Launch\nLeft/Right = Difficulty   |   ESC = Pause', {
-      fontSize: '14px',
+    this.add.text(GAME_WIDTH / 2, 560, 'Arrow Keys / A,D = Move   |   Space = Launch   |   ESC = Pause', {
+      fontSize: '12px',
       fontFamily: 'Arial',
       color: '#666666',
       align: 'center',
     }).setOrigin(0.5);
 
+    // Sound toggle button (top right)
+    this.createSoundToggle();
+
     // Floating dino decoration
     this.createFloatingDino();
+  }
+
+  createSoundToggle() {
+    const soundOn = storageManager.getSetting('soundEnabled');
+    this.soundBtn = this.add.text(GAME_WIDTH - 20, 20, soundOn ? '🔊' : '🔇', {
+      fontSize: '28px',
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+
+    this.soundBtn.on('pointerdown', () => {
+      const newState = storageManager.toggleSetting('soundEnabled');
+      this.soundBtn.setText(newState ? '🔊' : '🔇');
+      soundManager.setEnabled(newState);
+    });
+  }
+
+  startDailyChallenge() {
+    soundManager.init();
+    soundManager.playPowerup();
+    const daily = storageManager.getDailyChallenge();
+    this.scene.start('GameScene', {
+      difficulty: 'NORMAL',
+      dailyChallenge: true,
+      seed: daily.seed,
+    });
   }
 
   createDifficultyButtons() {

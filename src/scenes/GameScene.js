@@ -16,6 +16,8 @@ import { Starfield } from '../entities/Starfield.js';
 import { ParticleManager } from '../systems/ParticleManager.js';
 import { soundManager } from '../systems/SoundManager.js';
 import { SideVortex } from '../entities/SideVortex.js';
+import { storageManager } from '../systems/StorageManager.js';
+import { ACHIEVEMENTS } from '../config/achievements.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -27,6 +29,14 @@ export class GameScene extends Phaser.Scene {
     const difficultyKey = data?.difficulty || 'NORMAL';
     this.difficultyConfig = DIFFICULTY[difficultyKey];
     this.difficultyKey = difficultyKey;
+
+    // Daily challenge mode
+    this.isDailyChallenge = data?.dailyChallenge || false;
+    this.dailySeed = data?.seed || null;
+
+    // Settings
+    this.screenShakeEnabled = storageManager.getSetting('screenShake');
+    this.tutorialSeen = storageManager.getSetting('tutorialSeen');
 
     // Game state
     this.hearts = this.difficultyConfig.hearts;
@@ -212,6 +222,116 @@ export class GameScene extends Phaser.Scene {
 
     // Mutation meter
     this.createMutationMeter();
+
+    // Powerup timer bars
+    this.powerupBars = [];
+    this.createPowerupTimerArea();
+
+    // Sound toggle in game
+    this.createSoundToggle();
+
+    // Tutorial overlay (first time)
+    if (!this.tutorialSeen) {
+      this.showTutorial();
+    }
+
+    // Daily challenge indicator
+    if (this.isDailyChallenge) {
+      this.add.text(GAME_WIDTH / 2, 75, '🏆 DAILY CHALLENGE', {
+        fontSize: '14px',
+        fontFamily: 'Arial Black',
+        color: '#ff8800',
+      }).setOrigin(0.5);
+    }
+  }
+
+  createSoundToggle() {
+    const soundOn = storageManager.getSetting('soundEnabled');
+    this.soundBtn = this.add.text(GAME_WIDTH - 60, 55, soundOn ? '🔊' : '🔇', {
+      fontSize: '20px',
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true }).setDepth(50);
+
+    this.soundBtn.on('pointerdown', () => {
+      const newState = storageManager.toggleSetting('soundEnabled');
+      this.soundBtn.setText(newState ? '🔊' : '🔇');
+      soundManager.setEnabled(newState);
+    });
+  }
+
+  createPowerupTimerArea() {
+    // Area on the right side for powerup timer bars
+    this.powerupTimerY = 100;
+  }
+
+  showTutorial() {
+    // Semi-transparent overlay
+    const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.8);
+    overlay.setDepth(200);
+
+    const title = this.add.text(GAME_WIDTH / 2, 150, 'HOW TO PLAY', {
+      fontSize: '36px',
+      fontFamily: 'Arial Black',
+      color: '#00ff88',
+    }).setOrigin(0.5).setDepth(201);
+
+    const instructions = [
+      '← → or A/D = Move paddle',
+      'SPACE = Launch egg',
+      'Hold SPACE = Charged shot',
+      'SHIFT + direction = Dash',
+      '',
+      'Destroy dinos before they reach Earth!',
+      'Collect powerups for abilities',
+      'Mutations are permanent upgrades',
+    ];
+
+    instructions.forEach((line, i) => {
+      this.add.text(GAME_WIDTH / 2, 220 + i * 30, line, {
+        fontSize: '18px',
+        fontFamily: 'Arial',
+        color: '#ffffff',
+      }).setOrigin(0.5).setDepth(201);
+    });
+
+    const tapText = this.add.text(GAME_WIDTH / 2, 520, 'TAP OR PRESS ANY KEY TO START', {
+      fontSize: '20px',
+      fontFamily: 'Arial Black',
+      color: '#ffff00',
+    }).setOrigin(0.5).setDepth(201);
+
+    // Pulse animation
+    this.tweens.add({
+      targets: tapText,
+      alpha: 0.5,
+      duration: 500,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    // Dismiss on any input
+    const dismissTutorial = () => {
+      storageManager.setSetting('tutorialSeen', true);
+      this.tutorialSeen = true;
+      overlay.destroy();
+      title.destroy();
+      tapText.destroy();
+      instructions.forEach((_, i) => {
+        // Clean up instruction texts
+      });
+      this.children.each(child => {
+        if (child.depth === 201) child.destroy();
+      });
+    };
+
+    this.input.keyboard.once('keydown', dismissTutorial);
+    this.input.once('pointerdown', dismissTutorial);
+  }
+
+  // Screen shake helper that respects settings
+  doScreenShake(duration, intensity) {
+    if (this.screenShakeEnabled) {
+      this.cameras.main.shake(duration, intensity);
+    }
   }
 
   createMutationMeter() {
@@ -879,11 +999,64 @@ export class GameScene extends Phaser.Scene {
       this.stats.maxCombo = this.comboCount;
     }
 
-    // Show combo text
-    if (multiplier > 1) {
-      this.comboText.setText(`${this.comboCount} COMBO! x${multiplier}`);
+    // Show combo text with better display
+    if (this.comboCount >= 2) {
+      this.comboText.setText(`🔥 ${this.comboCount} COMBO x${multiplier}`);
       this.comboText.setAlpha(1);
+      this.comboText.setScale(1 + this.comboCount * 0.05);
+
+      // Combo color based on count
+      if (this.comboCount >= 10) {
+        this.comboText.setColor('#ff00ff');
+      } else if (this.comboCount >= 5) {
+        this.comboText.setColor('#ff8800');
+      } else {
+        this.comboText.setColor('#ffff00');
+      }
+
+      // Screen shake on big combos
+      if (this.comboCount >= 5 && this.comboCount % 5 === 0) {
+        this.doScreenShake(100, 0.005);
+      }
     }
+  }
+
+  updatePowerupTimerBars() {
+    // Clear old bars
+    this.powerupBars.forEach(bar => {
+      bar.bg.destroy();
+      bar.fill.destroy();
+      bar.text.destroy();
+    });
+    this.powerupBars = [];
+
+    // Create bars for active powerups
+    const activePowerups = this.powerupManager.getActivePowerups();
+    activePowerups.forEach((powerup, index) => {
+      const y = this.powerupTimerY + index * 25;
+      const barWidth = 80;
+      const barHeight = 16;
+      const x = GAME_WIDTH - 50;
+
+      // Background
+      const bg = this.add.rectangle(x, y, barWidth, barHeight, 0x333333);
+      bg.setOrigin(0.5);
+
+      // Fill based on remaining time
+      const ratio = powerup.remainingTime / powerup.config.duration;
+      const fillWidth = barWidth * ratio;
+      const fill = this.add.rectangle(x - barWidth / 2 + fillWidth / 2, y, fillWidth, barHeight - 4, powerup.config.color);
+      fill.setOrigin(0.5);
+
+      // Label
+      const text = this.add.text(x, y, powerup.config.label, {
+        fontSize: '10px',
+        fontFamily: 'Arial Black',
+        color: '#ffffff',
+      }).setOrigin(0.5);
+
+      this.powerupBars.push({ bg, fill, text });
+    });
   }
 
   trySpawnDrop(x, y) {
@@ -1005,6 +1178,18 @@ export class GameScene extends Phaser.Scene {
       this.stats.bossesDefeated++;
     }
 
+    // Save high score
+    const isNewHigh = storageManager.updateHighScore(this.score, this.currentWave);
+    storageManager.addKills(this.stats.dinosKilled);
+
+    // Daily challenge score
+    if (this.isDailyChallenge) {
+      storageManager.updateDailyScore(this.score);
+    }
+
+    // Check achievements
+    this.checkAchievements();
+
     // Play appropriate sound
     if (won) {
       soundManager.playVictory();
@@ -1018,7 +1203,72 @@ export class GameScene extends Phaser.Scene {
       won: won,
       stats: this.stats,
       mutations: { ...this.mutations },
+      isNewHigh: isNewHigh,
+      isDailyChallenge: this.isDailyChallenge,
     });
+  }
+
+  checkAchievements() {
+    const stats = {
+      totalKills: storageManager.getTotalKills(),
+      highScore: storageManager.getHighScore(),
+      highWave: storageManager.getHighWave(),
+      totalGames: storageManager.getTotalGames(),
+      maxCombo: this.stats.maxCombo,
+      maxChain: this.stats.maxChain || 0,
+      perfectWaves: this.stats.perfectWaves || 0,
+      secretsFound: this.secretCodes ? Object.values(this.secretCodes).filter(s => s.activated).length : 0,
+      maxMutations: Object.values(this.mutations).filter(v => v > 0).length,
+    };
+
+    Object.values(ACHIEVEMENTS).forEach(achievement => {
+      if (!storageManager.hasAchievement(achievement.id)) {
+        if (achievement.check(stats)) {
+          this.unlockAchievement(achievement);
+        }
+      }
+    });
+  }
+
+  unlockAchievement(achievement) {
+    if (storageManager.unlockAchievement(achievement.id)) {
+      // Show unlock notification
+      soundManager.playAchievement();
+
+      const popup = this.add.container(GAME_WIDTH / 2, -80);
+      popup.setDepth(300);
+
+      const bg = this.add.rectangle(0, 0, 280, 60, 0x222222, 0.95);
+      bg.setStrokeStyle(2, 0xffcc00);
+
+      const icon = this.add.text(-110, 0, achievement.icon, { fontSize: '32px' }).setOrigin(0.5);
+      const title = this.add.text(10, -12, 'ACHIEVEMENT UNLOCKED!', {
+        fontSize: '12px', fontFamily: 'Arial', color: '#ffcc00'
+      }).setOrigin(0.5);
+      const name = this.add.text(10, 10, achievement.name, {
+        fontSize: '16px', fontFamily: 'Arial Black', color: '#ffffff'
+      }).setOrigin(0.5);
+
+      popup.add([bg, icon, title, name]);
+
+      // Animate in and out
+      this.tweens.add({
+        targets: popup,
+        y: 60,
+        duration: 500,
+        ease: 'Back.out',
+        onComplete: () => {
+          this.time.delayedCall(2000, () => {
+            this.tweens.add({
+              targets: popup,
+              y: -80,
+              duration: 300,
+              onComplete: () => popup.destroy(),
+            });
+          });
+        },
+      });
+    }
   }
 
   update(time, delta) {
@@ -1057,6 +1307,9 @@ export class GameScene extends Phaser.Scene {
 
     // Update powerup manager
     this.powerupManager.update(delta);
+
+    // Update powerup timer bars
+    this.updatePowerupTimerBars();
 
     // Update combo timer
     if (this.comboTimer > 0) {

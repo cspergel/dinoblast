@@ -14,6 +14,8 @@ export class GameOverScene extends Phaser.Scene {
     this.won = data.won || false;
     this.stats = data.stats || {};
     this.mutations = data.mutations || {};
+    this.isNewHigh = data.isNewHigh || false;
+    this.isDailyChallenge = data.isDailyChallenge || false;
   }
 
   create() {
@@ -30,15 +32,42 @@ export class GameOverScene extends Phaser.Scene {
       color: titleColor,
     }).setOrigin(0.5);
 
+    // Daily Challenge indicator
+    if (this.isDailyChallenge) {
+      this.add.text(GAME_WIDTH / 2, 95, '🏆 DAILY CHALLENGE', {
+        fontSize: '16px',
+        fontFamily: 'Arial Black',
+        color: '#ff8800',
+      }).setOrigin(0.5);
+    }
+
     // Score (big)
-    this.add.text(GAME_WIDTH / 2, 120, `SCORE: ${this.finalScore}`, {
+    const scoreText = this.add.text(GAME_WIDTH / 2, 120, `SCORE: ${this.finalScore}`, {
       fontSize: '36px',
       fontFamily: 'Arial Black',
       color: '#ffffff',
     }).setOrigin(0.5);
 
+    // New High Score indicator
+    if (this.isNewHigh) {
+      const newHighText = this.add.text(GAME_WIDTH / 2, 155, '⭐ NEW HIGH SCORE! ⭐', {
+        fontSize: '20px',
+        fontFamily: 'Arial Black',
+        color: '#ffcc00',
+      }).setOrigin(0.5);
+
+      // Pulse animation
+      this.tweens.add({
+        targets: [scoreText, newHighText],
+        scale: 1.1,
+        duration: 500,
+        yoyo: true,
+        repeat: -1,
+      });
+    }
+
     // Wave reached
-    this.add.text(GAME_WIDTH / 2, 160, `Wave ${this.waveReached}/10`, {
+    this.add.text(GAME_WIDTH / 2, this.isNewHigh ? 185 : 160, `Wave ${this.waveReached}/10`, {
       fontSize: '20px',
       fontFamily: 'Arial',
       color: '#888888',

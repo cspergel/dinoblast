@@ -274,9 +274,38 @@ export class SoundManager {
     this.volume = Math.max(0, Math.min(1, vol));
   }
 
+  setEnabled(enabled) {
+    this.enabled = enabled;
+  }
+
   toggle() {
     this.enabled = !this.enabled;
     return this.enabled;
+  }
+
+  // Achievement unlock sound
+  playAchievement() {
+    if (!this.enabled || !this.audioContext) return;
+    this.resume();
+
+    const notes = [523, 784, 1047, 1319]; // C5, G5, C6, E6
+    notes.forEach((freq, i) => {
+      const osc = this.audioContext.createOscillator();
+      const gain = this.audioContext.createGain();
+
+      osc.type = 'sine';
+      osc.connect(gain);
+      gain.connect(this.audioContext.destination);
+
+      const startTime = this.audioContext.currentTime + i * 0.08;
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(this.volume * 0.4, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.25);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.25);
+    });
   }
 }
 
