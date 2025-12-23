@@ -37,6 +37,49 @@ export class MeteorEgg {
     this.gameObject.body.setVelocity(vx, vy);
   }
 
+  powerLaunch(chargeRatio) {
+    if (this.launched) return;
+
+    this.launched = true;
+
+    // Base speed boosted by charge
+    const baseSpeed = this.getCurrentSpeed();
+    const speed = baseSpeed * (1 + chargeRatio * 0.8); // Up to 80% faster
+
+    // Temporary piercing for power shots
+    if (chargeRatio > 0.7) {
+      this.piercing = true;
+      this.piercingTimer = 2000; // 2 seconds of piercing
+
+      // Visual indicator - glowing effect
+      this.gameObject.setTint(0x00ffff);
+    }
+
+    // Launch straight up with slight random angle
+    const angleVariance = (Math.random() - 0.5) * 20;
+    const angle = -90 + angleVariance;
+    const radians = Phaser.Math.DegToRad(angle);
+
+    this.gameObject.body.setVelocity(
+      Math.cos(radians) * speed,
+      Math.sin(radians) * speed
+    );
+
+    // Increase max velocity temporarily for power shots
+    this.gameObject.body.setMaxVelocity(500, 500);
+  }
+
+  updatePowerShot(delta) {
+    if (this.piercingTimer > 0) {
+      this.piercingTimer -= delta;
+      if (this.piercingTimer <= 0) {
+        this.piercing = false;
+        this.gameObject.clearTint();
+        this.gameObject.body.setMaxVelocity(400, 400);
+      }
+    }
+  }
+
   getCurrentSpeed() {
     // Use difficulty-adjusted egg speed or default
     let speed = this.scene.difficultyConfig?.eggSpeed || EGG.speed;

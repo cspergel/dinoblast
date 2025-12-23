@@ -72,16 +72,16 @@ export const MUTATIONS = {
     label: 'W+',
     color: 0x00ff00,
     maxStacks: 3,
-    perStack: 0.15, // +15% width
-    description: '+15% paddle width per stack',
+    perStack: 0.25, // +25% width
+    description: '+25% paddle width per stack',
   },
   SPEED: {
     name: 'Jetpack Fins',
     label: 'S+',
     color: 0xffff00,
     maxStacks: 3,
-    perStack: 0.10, // +10% speed
-    description: '+10% paddle speed per stack',
+    perStack: 0.20, // +20% speed
+    description: '+20% paddle speed per stack',
   },
   ARMOR: {
     name: 'Ankylosaur Armor',

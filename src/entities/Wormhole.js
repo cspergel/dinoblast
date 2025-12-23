@@ -58,9 +58,20 @@ export class Wormhole {
     // Determine exit portal
     const exitPortal = enteredPortalA ? this.portalB : this.portalA;
 
-    // Teleport egg
-    egg.gameObject.x = exitPortal.x;
-    egg.gameObject.y = exitPortal.y;
+    // Get egg velocity to determine exit direction
+    const body = egg.gameObject.body;
+    const speed = Math.sqrt(body.velocity.x ** 2 + body.velocity.y ** 2);
+    const angle = Math.atan2(body.velocity.y, body.velocity.x);
+
+    // Teleport egg and push it away from exit portal
+    const exitOffset = this.radius + 15; // Push past the portal radius
+    egg.gameObject.x = exitPortal.x + Math.cos(angle) * exitOffset;
+    egg.gameObject.y = exitPortal.y + Math.sin(angle) * exitOffset;
+
+    // Boost speed slightly on exit
+    const boostedSpeed = Math.max(speed, 200);
+    body.velocity.x = Math.cos(angle) * boostedSpeed;
+    body.velocity.y = Math.sin(angle) * boostedSpeed;
 
     // Start cooldown
     this.cooldown = this.cooldownTime;

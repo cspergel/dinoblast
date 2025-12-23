@@ -45,6 +45,37 @@ export const SPRITES = {
       hp: 2,
       shootChance: 0.0004, // Reduced 10x for easier gameplay
     },
+    splitter: {
+      type: 'rect',
+      color: 0x00ff88,
+      width: 55,
+      height: 45,
+      label: 'S',
+      hp: 1,
+      shootChance: 0.0003,
+      splits: true, // Spawns 2 baby splitters on death
+    },
+    splitter_baby: {
+      type: 'rect',
+      color: 0x88ffbb,
+      width: 30,
+      height: 25,
+      label: 's',
+      hp: 1,
+      shootChance: 0.0001,
+      isBaby: true, // Smaller, faster
+    },
+    bomber: {
+      type: 'rect',
+      color: 0xff0088,
+      width: 50,
+      height: 40,
+      label: 'B',
+      hp: 1,
+      shootChance: 0.0001,
+      explodes: true, // Chain reaction explosion
+      explosionRadius: 80, // Pixels
+    },
   },
 
   bullet: {

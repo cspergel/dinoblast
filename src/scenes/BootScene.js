@@ -96,6 +96,91 @@ export class BootScene extends Phaser.Scene {
 
     // Trike - blue tank
     this.generateDinoTexture('dino_trike', 0x4488ff, 0x66aaff, 'T');
+
+    // Splitter - green that splits
+    this.generateSplitterTexture('dino_splitter', 0x00ff88, 0x88ffcc, 55, 45);
+
+    // Baby splitter - smaller
+    this.generateSplitterTexture('dino_splitter_baby', 0x88ffbb, 0xbbffdd, 30, 25);
+
+    // Bomber - pink explosive
+    this.generateBomberTexture();
+  }
+
+  generateBomberTexture() {
+    const g = this.make.graphics({ x: 0, y: 0, add: false });
+    const w = 50, h = 40;
+
+    // Body - bomb shape
+    g.fillStyle(0xff0088);
+    g.fillRoundedRect(2, 8, w - 4, h - 12, 8);
+
+    // Head
+    g.fillStyle(0xff0088);
+    g.fillCircle(w / 2, 12, 10);
+
+    // Fuse/wick
+    g.lineStyle(3, 0xffaa00);
+    g.lineBetween(w / 2, 2, w / 2 + 8, 6);
+
+    // Spark at end
+    g.fillStyle(0xffff00);
+    g.fillCircle(w / 2 + 8, 6, 4);
+    g.fillStyle(0xffffff);
+    g.fillCircle(w / 2 + 8, 5, 2);
+
+    // Eyes - angry/determined
+    g.fillStyle(0xffffff);
+    g.fillCircle(w / 2 - 5, 12, 4);
+    g.fillCircle(w / 2 + 5, 12, 4);
+
+    // Pupils
+    g.fillStyle(0x000000);
+    g.fillCircle(w / 2 - 4, 13, 2);
+    g.fillCircle(w / 2 + 6, 13, 2);
+
+    // Warning stripes
+    g.fillStyle(0xff88aa, 0.5);
+    for (let i = 0; i < 3; i++) {
+      g.fillRect(10 + i * 12, h - 10, 6, 6);
+    }
+
+    g.generateTexture('dino_bomber', w, h);
+    g.destroy();
+  }
+
+  generateSplitterTexture(key, mainColor, highlightColor, w, h) {
+    const g = this.make.graphics({ x: 0, y: 0, add: false });
+
+    // Body with split line
+    g.fillStyle(mainColor);
+    g.fillRoundedRect(2, 8, w - 4, h - 12, 6);
+
+    // Head (two bumps to suggest splitting)
+    g.fillStyle(mainColor);
+    g.fillCircle(w / 3, 10, 8);
+    g.fillCircle(w * 2 / 3, 10, 8);
+
+    // Split line down middle
+    g.lineStyle(2, 0xffffff, 0.5);
+    g.lineBetween(w / 2, 4, w / 2, h - 4);
+
+    // Eyes (two pairs)
+    g.fillStyle(0xffffff);
+    g.fillCircle(w / 3, 8, 3);
+    g.fillCircle(w * 2 / 3, 8, 3);
+
+    // Pupils
+    g.fillStyle(0x000000);
+    g.fillCircle(w / 3 + 1, 9, 1.5);
+    g.fillCircle(w * 2 / 3 + 1, 9, 1.5);
+
+    // Highlight
+    g.fillStyle(highlightColor, 0.5);
+    g.fillRoundedRect(6, 12, w - 12, 8, 3);
+
+    g.generateTexture(key, w, h);
+    g.destroy();
   }
 
   generateDinoTexture(key, mainColor, highlightColor, label) {

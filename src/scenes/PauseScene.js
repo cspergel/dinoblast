@@ -32,8 +32,22 @@ export class PauseScene extends Phaser.Scene {
       this.scene.stop();
     });
 
+    // Restart button
+    const restartButton = this.add.text(GAME_WIDTH / 2, 380, '[ RESTART ]', {
+      fontSize: '28px',
+      fontFamily: 'Arial',
+      color: '#ffaa00',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    restartButton.on('pointerover', () => restartButton.setColor('#ffffff'));
+    restartButton.on('pointerout', () => restartButton.setColor('#ffaa00'));
+    restartButton.on('pointerdown', () => {
+      this.scene.stop();
+      this.scene.get('GameScene').scene.restart();
+    });
+
     // Quit button
-    const quitButton = this.add.text(GAME_WIDTH / 2, 380, '[ QUIT ]', {
+    const quitButton = this.add.text(GAME_WIDTH / 2, 440, '[ QUIT ]', {
       fontSize: '28px',
       fontFamily: 'Arial',
       color: '#ff4444',

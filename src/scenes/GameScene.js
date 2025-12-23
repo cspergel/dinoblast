@@ -114,8 +114,38 @@ export class GameScene extends Phaser.Scene {
     // Create side bumpers (permanent pinball elements)
     this.createSideBumpers();
 
+    // Power shot charging
+    this.chargeTime = 0;
+    this.maxChargeTime = 1500; // 1.5 seconds for full charge
+    this.isCharging = false;
+    this.chargeVisual = null;
+
+    // Secret codes
+    this.secretCodes = {
+      konami: {
+        code: ['UP', 'UP', 'DOWN', 'DOWN', 'LEFT', 'RIGHT', 'LEFT', 'RIGHT', 'ENTER'],
+        index: 0,
+        activated: false,
+      },
+      laser: {
+        code: ['L', 'L', 'L', 'ENTER'],
+        index: 0,
+        activated: false,
+      },
+      god: {
+        code: ['G', 'O', 'D', 'ENTER'],
+        index: 0,
+        activated: false,
+      },
+    };
+    this.laserToggleEnabled = false;
+    this.laserToggleOn = false;
+    this.godModeEnabled = false;
+    this.setupSecretCodeListener();
+
     // Input
-    this.input.keyboard.on('keydown-SPACE', () => this.launchEgg());
+    this.input.keyboard.on('keydown-SPACE', () => this.startCharge());
+    this.input.keyboard.on('keyup-SPACE', () => this.releaseCharge());
     this.input.keyboard.on('keydown-ESC', () => {
       this.scene.launch('PauseScene');
       this.scene.pause();
@@ -147,6 +177,31 @@ export class GameScene extends Phaser.Scene {
       fontSize: '24px',
       color: '#ffffff',
     }).setOrigin(1, 0);
+
+    // Pause button
+    this.pauseBtn = this.add.text(GAME_WIDTH - 20, 55, '⏸', {
+      fontSize: '24px',
+      color: '#888888',
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+
+    this.pauseBtn.on('pointerover', () => this.pauseBtn.setColor('#ffffff'));
+    this.pauseBtn.on('pointerout', () => this.pauseBtn.setColor('#888888'));
+    this.pauseBtn.on('pointerdown', () => {
+      this.scene.launch('PauseScene');
+      this.scene.pause();
+    });
+
+    // Reset button
+    this.resetBtn = this.add.text(GAME_WIDTH - 50, 55, '↺', {
+      fontSize: '24px',
+      color: '#888888',
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+
+    this.resetBtn.on('pointerover', () => this.resetBtn.setColor('#ff4444'));
+    this.resetBtn.on('pointerout', () => this.resetBtn.setColor('#888888'));
+    this.resetBtn.on('pointerdown', () => {
+      this.scene.restart();
+    });
 
     // Combo
     this.comboText = this.add.text(GAME_WIDTH / 2, 50, '', {
@@ -252,10 +307,309 @@ export class GameScene extends Phaser.Scene {
     return egg;
   }
 
-  launchEgg() {
+  startCharge() {
+    // Only charge if we have unlaunched eggs
+    const hasUnlaunched = this.eggs.some(e => !e.launched);
+    if (!hasUnlaunched) return;
+
+    this.isCharging = true;
+    this.chargeTime = 0;
+
+    // Create charge visual
+    if (!this.chargeVisual) {
+      this.chargeVisual = this.add.circle(this.paddle.x, this.paddle.y - 30, 5, 0xffff00, 0.8);
+    }
+  }
+
+  releaseCharge() {
+    if (!this.isCharging) {
+      // Quick tap - normal launch
+      this.launchEgg(false);
+      return;
+    }
+
+    this.isCharging = false;
+    const chargeRatio = Math.min(this.chargeTime / this.maxChargeTime, 1);
+
+    // Destroy charge visual
+    if (this.chargeVisual) {
+      this.chargeVisual.destroy();
+      this.chargeVisual = null;
+    }
+
+    // Launch with power based on charge
+    if (chargeRatio > 0.3) {
+      this.launchEgg(true, chargeRatio);
+    } else {
+      this.launchEgg(false);
+    }
+  }
+
+  updateCharge(delta) {
+    if (!this.isCharging) return;
+
+    this.chargeTime += delta;
+    const chargeRatio = Math.min(this.chargeTime / this.maxChargeTime, 1);
+
+    // Update charge visual
+    if (this.chargeVisual) {
+      this.chargeVisual.x = this.paddle.x;
+      this.chargeVisual.y = this.paddle.y - 30 - chargeRatio * 20;
+      this.chargeVisual.setRadius(5 + chargeRatio * 15);
+
+      // Color shifts from yellow to white to cyan
+      if (chargeRatio < 0.5) {
+        this.chargeVisual.setFillStyle(0xffff00, 0.8);
+      } else if (chargeRatio < 0.8) {
+        this.chargeVisual.setFillStyle(0xffffff, 0.9);
+      } else {
+        this.chargeVisual.setFillStyle(0x00ffff, 1);
+        // Pulse at max charge
+        const pulse = Math.sin(Date.now() * 0.02) * 0.3 + 0.7;
+        this.chargeVisual.setScale(pulse + 0.3);
+      }
+
+      // Screen shake buildup at high charge
+      if (chargeRatio > 0.8) {
+        this.cameras.main.shake(50, 0.002);
+      }
+    }
+  }
+
+  setupSecretCodeListener() {
+    const keyMap = {
+      'ArrowUp': 'UP',
+      'ArrowDown': 'DOWN',
+      'ArrowLeft': 'LEFT',
+      'ArrowRight': 'RIGHT',
+      'Enter': 'ENTER',
+      'KeyL': 'L',
+      'KeyG': 'G',
+      'KeyO': 'O',
+      'KeyD': 'D',
+    };
+
+    this.input.keyboard.on('keydown', (event) => {
+      const key = keyMap[event.code];
+      if (!key) return;
+
+      // Check each secret code
+      Object.entries(this.secretCodes).forEach(([name, data]) => {
+        if (data.activated) return;
+
+        if (key === data.code[data.index]) {
+          data.index++;
+
+          if (data.index === data.code.length) {
+            this.activateSecretCode(name);
+          }
+        } else {
+          // Reset if wrong key
+          data.index = 0;
+          // But check if this key starts the sequence
+          if (key === data.code[0]) {
+            data.index = 1;
+          }
+        }
+      });
+    });
+
+    // L key toggle for laser (after LLL ENTER unlocked)
+    this.input.keyboard.on('keydown-L', () => {
+      if (this.laserToggleEnabled) {
+        this.laserToggleOn = !this.laserToggleOn;
+        this.showQuickMessage(this.laserToggleOn ? 'LASER ON' : 'LASER OFF',
+          this.laserToggleOn ? '#ff0000' : '#888888');
+      }
+    });
+  }
+
+  activateSecretCode(name) {
+    this.secretCodes[name].activated = true;
+
+    switch (name) {
+      case 'konami':
+        this.activateKonamiCode();
+        break;
+      case 'laser':
+        this.activateLaserCode();
+        break;
+      case 'god':
+        this.activateGodMode();
+        break;
+    }
+  }
+
+  activateLaserCode() {
+    this.laserToggleEnabled = true;
+    this.laserToggleOn = true;
+
+    soundManager.playPowerup();
+    this.cameras.main.flash(300, 255, 0, 0);
+
+    this.showQuickMessage('LASER UNLOCKED!', '#ff0000');
+    this.showQuickMessage('Press L to toggle', '#ffaaaa', 40);
+  }
+
+  activateGodMode() {
+    this.godModeEnabled = true;
+    this.hearts = 99;
+    this.heartsText.setText('♥99');
+
+    soundManager.playVictory();
+    this.cameras.main.flash(500, 255, 255, 255);
+
+    this.showQuickMessage('GOD MODE', '#ffffff');
+
+    // Rainbow paddle
+    let hue = 0;
+    this.time.addEvent({
+      delay: 50,
+      callback: () => {
+        hue = (hue + 5) % 360;
+        const color = Phaser.Display.Color.HSLToColor(hue / 360, 1, 0.5).color;
+        this.paddle.gameObject.setTint(color);
+      },
+      loop: true,
+    });
+  }
+
+  showQuickMessage(text, color, yOffset = 0) {
+    const msg = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + yOffset, text, {
+      fontSize: '36px',
+      fontFamily: 'Arial Black',
+      color: color,
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5);
+
+    this.tweens.add({
+      targets: msg,
+      alpha: 0,
+      y: msg.y - 50,
+      duration: 1500,
+      onComplete: () => msg.destroy(),
+    });
+  }
+
+  activateKonamiCode() {
+
+    // Sound effect
+    soundManager.playVictory();
+
+    // Screen flash
+    this.cameras.main.flash(500, 255, 215, 0);
+
+    // Big announcement
+    const text1 = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, 'KONAMI CODE!', {
+      fontSize: '48px',
+      fontFamily: 'Arial Black',
+      color: '#ffcc00',
+      stroke: '#000000',
+      strokeThickness: 6,
+    }).setOrigin(0.5);
+
+    const text2 = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20, 'DINO PARTY MODE!', {
+      fontSize: '32px',
+      fontFamily: 'Arial Black',
+      color: '#ff00ff',
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5);
+
+    // Animate text
+    this.tweens.add({
+      targets: [text1, text2],
+      scale: { from: 0, to: 1 },
+      duration: 500,
+      ease: 'Back.out',
+    });
+
+    this.tweens.add({
+      targets: [text1, text2],
+      alpha: 0,
+      delay: 2000,
+      duration: 500,
+      onComplete: () => {
+        text1.destroy();
+        text2.destroy();
+      },
+    });
+
+    // Grant bonuses
+    this.hearts = Math.min(this.hearts + 3, 9);
+    this.heartsText.setText(this.getHeartsDisplay());
+
+    // Give all mutations 1 stack
+    Object.keys(this.mutations).forEach(key => {
+      if (this.mutations[key] === 0) {
+        this.mutations[key] = 1;
+        this.stats.mutationsGained++;
+      }
+    });
+    this.paddle.updateWidth();
+    this.paddle.addShield(1);
+    this.updateMutationMeter();
+
+    // Party mode - make all dinos rainbow
+    this.waveManager.dinos.forEach(dino => {
+      this.tweens.add({
+        targets: dino.gameObject,
+        angle: 360,
+        duration: 1000,
+        repeat: -1,
+      });
+
+      // Rainbow tint cycle
+      let hue = 0;
+      this.time.addEvent({
+        delay: 100,
+        callback: () => {
+          hue = (hue + 10) % 360;
+          const color = Phaser.Display.Color.HSLToColor(hue / 360, 1, 0.5).color;
+          dino.gameObject.setTint(color);
+        },
+        loop: true,
+      });
+    });
+
+    // Confetti
+    for (let i = 0; i < 50; i++) {
+      const colors = [0xff0000, 0xff8800, 0xffff00, 0x00ff00, 0x00ffff, 0xff00ff];
+      const confetti = this.add.rectangle(
+        Phaser.Math.Between(0, GAME_WIDTH),
+        -20,
+        Phaser.Math.Between(8, 16),
+        Phaser.Math.Between(8, 16),
+        Phaser.Utils.Array.GetRandom(colors)
+      );
+
+      this.tweens.add({
+        targets: confetti,
+        y: GAME_HEIGHT + 50,
+        x: confetti.x + Phaser.Math.Between(-100, 100),
+        angle: Phaser.Math.Between(0, 720),
+        duration: Phaser.Math.Between(2000, 4000),
+        onComplete: () => confetti.destroy(),
+      });
+    }
+
+    // Add bonus score
+    this.addScore(1000);
+  }
+
+  launchEgg(powered = false, chargeRatio = 0) {
     this.eggs.forEach(egg => {
       if (!egg.launched) {
-        egg.launch();
+        if (powered) {
+          egg.powerLaunch(chargeRatio);
+          soundManager.playExplosion();
+          this.cameras.main.shake(100, 0.01);
+          // Particle burst
+          this.particles.bombExplosion(egg.x, egg.y);
+        } else {
+          egg.launch();
+        }
       }
     });
   }
@@ -672,12 +1026,19 @@ export class GameScene extends Phaser.Scene {
     this.starfield.update(time, delta);
 
     // Update paddle
-    this.paddle.update();
+    this.paddle.update(delta);
+
+    // Update charge visual
+    this.updateCharge(delta);
 
     // Update eggs
     this.eggs.forEach(egg => {
       if (!egg.launched) {
         egg.followPaddle(this.paddle);
+      }
+      // Update power shot piercing timer
+      if (egg.updatePowerShot) {
+        egg.updatePowerShot(delta);
       }
     });
 
@@ -744,8 +1105,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   updateLasers(delta) {
-    // Check if LASER powerup is active
-    const laserActive = this.powerupManager.isActive('LASER');
+    // Check if LASER powerup is active OR laser toggle is on
+    const laserActive = this.powerupManager.isActive('LASER') || this.laserToggleOn;
 
     if (laserActive) {
       this.laserCooldown -= delta;

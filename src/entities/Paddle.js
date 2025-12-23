@@ -26,6 +26,18 @@ export class Paddle {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
     });
+    this.shiftKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+
+    // Dash ability
+    this.dashCooldown = 0;
+    this.dashCooldownTime = 1500; // 1.5 second cooldown
+    this.dashDuration = 150; // 150ms dash
+    this.dashTimer = 0;
+    this.isDashing = false;
+    this.dashDirection = 0;
+    this.dashSpeed = 1200; // Fast dash
+    this.dashInvincible = false;
+    this.dashTrails = [];
 
     // Shield pips
     this.shieldPips = 0;
@@ -48,19 +60,70 @@ export class Paddle {
     this.glowIntensity = 0;
   }
 
-  update() {
+  update(delta = 16) {
     const body = this.gameObject.body;
 
-    // Calculate current speed (base + mutations + powerups)
-    const currentSpeed = this.getCurrentSpeed();
+    // Update dash cooldown
+    if (this.dashCooldown > 0) {
+      this.dashCooldown -= delta;
+    }
 
-    // Movement
-    if (this.cursors.left.isDown || this.wasd.left.isDown) {
-      body.setVelocityX(-currentSpeed);
-    } else if (this.cursors.right.isDown || this.wasd.right.isDown) {
-      body.setVelocityX(currentSpeed);
+    // Handle dashing
+    if (this.isDashing) {
+      this.dashTimer -= delta;
+
+      // Create trail effect
+      if (Math.random() < 0.5) {
+        const trail = this.scene.add.rectangle(
+          this.gameObject.x,
+          this.gameObject.y,
+          this.getCurrentWidth() * 0.8,
+          PADDLE.height * 0.8,
+          0x00ffff,
+          0.6
+        );
+        this.dashTrails.push({ obj: trail, life: 150 });
+      }
+
+      if (this.dashTimer <= 0) {
+        this.isDashing = false;
+        this.dashInvincible = false;
+        body.setVelocityX(0);
+      }
     } else {
-      body.setVelocityX(0);
+      // Normal movement
+      const currentSpeed = this.getCurrentSpeed();
+      const movingLeft = this.cursors.left.isDown || this.wasd.left.isDown;
+      const movingRight = this.cursors.right.isDown || this.wasd.right.isDown;
+
+      // Check for dash input (Shift + direction)
+      if (this.shiftKey.isDown && this.dashCooldown <= 0) {
+        if (movingLeft) {
+          this.startDash(-1);
+        } else if (movingRight) {
+          this.startDash(1);
+        }
+      } else {
+        // Normal movement
+        if (movingLeft) {
+          body.setVelocityX(-currentSpeed);
+        } else if (movingRight) {
+          body.setVelocityX(currentSpeed);
+        } else {
+          body.setVelocityX(0);
+        }
+      }
+    }
+
+    // Update trail effects
+    for (let i = this.dashTrails.length - 1; i >= 0; i--) {
+      const trail = this.dashTrails[i];
+      trail.life -= delta;
+      trail.obj.setAlpha(trail.life / 150 * 0.6);
+      if (trail.life <= 0) {
+        trail.obj.destroy();
+        this.dashTrails.splice(i, 1);
+      }
     }
 
     // Update shield visual positions
@@ -72,6 +135,29 @@ export class Paddle {
 
     // Update glow effect
     this.updateGlow();
+  }
+
+  startDash(direction) {
+    this.isDashing = true;
+    this.dashTimer = this.dashDuration;
+    this.dashDirection = direction;
+    this.dashCooldown = this.dashCooldownTime;
+    this.dashInvincible = true;
+
+    // Apply dash velocity
+    this.gameObject.body.setVelocityX(this.dashSpeed * direction);
+
+    // Flash effect
+    this.scene.tweens.add({
+      targets: this.gameObject,
+      alpha: 0.5,
+      duration: 50,
+      yoyo: true,
+      repeat: 2,
+    });
+
+    // Screen effect
+    this.scene.cameras.main.shake(50, 0.002);
   }
 
   updateGlow() {
@@ -120,28 +206,28 @@ export class Paddle {
   }
 
   getCurrentSpeed() {
-    // Base speed + mutation bonuses (10% per stack) + powerup bonuses
+    // Base speed + mutation bonuses (20% per stack) + powerup bonuses
     let speed = this.baseSpeed;
     const mutations = this.scene.mutations || {};
-    speed *= (1 + (mutations.speed || 0) * 0.10);
+    speed *= (1 + (mutations.speed || 0) * 0.20);
 
     // Check for active FAST powerup
     if (this.scene.powerupManager?.isActive('FAST')) {
-      speed *= 1.4;
+      speed *= 1.5;
     }
 
     return speed;
   }
 
   getCurrentWidth() {
-    // Base width + mutations (15% per stack) + powerups
+    // Base width + mutations (25% per stack) + powerups
     let width = this.baseWidth;
     const mutations = this.scene.mutations || {};
-    width *= (1 + (mutations.width || 0) * 0.15);
+    width *= (1 + (mutations.width || 0) * 0.25);
 
     // Check for active WIDE powerup
     if (this.scene.powerupManager?.isActive('WIDE')) {
-      width *= 1.5;
+      width *= 1.6;
     }
 
     return width;
@@ -171,6 +257,11 @@ export class Paddle {
   }
 
   hitByBullet() {
+    // Invincible during dash
+    if (this.dashInvincible) {
+      return false;
+    }
+
     if (this.shieldPips > 0) {
       this.shieldPips--;
       this.updateShieldVisuals();

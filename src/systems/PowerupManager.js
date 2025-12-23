@@ -127,10 +127,17 @@ export class PowerupManager {
     // Update paddle width
     this.scene.paddle.updateWidth();
 
-    // Update egg piercing
+    // Update egg piercing with visual
     const hasFire = this.activePowerups.some(p => p.type === 'FIRE');
     this.scene.eggs.forEach(egg => {
       egg.piercing = hasFire;
+      if (hasFire) {
+        egg.gameObject.setTint(0xff4400);
+        egg.gameObject.setScale(1.3);
+      } else if (!egg.piercingTimer) {
+        egg.gameObject.clearTint();
+        egg.gameObject.setScale(1);
+      }
     });
   }
 

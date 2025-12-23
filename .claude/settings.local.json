@@ -21,7 +21,8 @@
       "WebSearch",
       "WebFetch(domain:itch.io)",
       "WebFetch(domain:schwarnhild.itch.io)",
-      "WebFetch(domain:arks.itch.io)"
+      "WebFetch(domain:arks.itch.io)",
+      "Bash(timeout /t 5 /nobreak)"
     ]
   }
 }
