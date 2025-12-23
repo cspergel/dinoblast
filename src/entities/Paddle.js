@@ -30,6 +30,8 @@ export class Paddle {
 
     // Touch controls
     this.touchMoving = 0; // -1 left, 0 none, 1 right
+    this.touchDragging = false;
+    this.touchTargetX = null;
     this.setupTouchControls();
 
     // Dash ability
@@ -107,8 +109,20 @@ export class Paddle {
         } else if (movingRight) {
           this.startDash(1);
         }
+      } else if (this.touchDragging && this.touchTargetX !== null) {
+        // Direct touch drag - paddle follows finger
+        const dx = this.touchTargetX - this.gameObject.x;
+        const deadZone = 5;
+
+        if (Math.abs(dx) > deadZone) {
+          // Move toward target at high speed for responsive feel
+          const dragSpeed = Math.min(Math.abs(dx) * 8, currentSpeed * 2);
+          body.setVelocityX(dx > 0 ? dragSpeed : -dragSpeed);
+        } else {
+          body.setVelocityX(0);
+        }
       } else {
-        // Normal movement
+        // Normal keyboard/zone movement
         if (movingLeft) {
           body.setVelocityX(-currentSpeed);
         } else if (movingRight) {
@@ -320,89 +334,56 @@ export class Paddle {
   setupTouchControls() {
     const scene = this.scene;
 
-    // Create invisible touch zones
-    const zoneHeight = 150;
-    const zoneWidth = GAME_WIDTH / 3;
-
-    // Left touch zone
-    this.leftZone = scene.add.rectangle(zoneWidth / 2, GAME_HEIGHT - zoneHeight / 2, zoneWidth, zoneHeight, 0x0000ff, 0)
-      .setInteractive()
-      .setDepth(100);
-
-    // Right touch zone
-    this.rightZone = scene.add.rectangle(GAME_WIDTH - zoneWidth / 2, GAME_HEIGHT - zoneHeight / 2, zoneWidth, zoneHeight, 0xff0000, 0)
-      .setInteractive()
-      .setDepth(100);
-
-    // Center zone (for launch/dash)
-    this.centerZone = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - zoneHeight / 2, zoneWidth, zoneHeight, 0x00ff00, 0)
-      .setInteractive()
-      .setDepth(100);
-
-    // Visual indicators (semi-transparent)
-    this.leftIndicator = scene.add.text(50, GAME_HEIGHT - 40, '◀', {
-      fontSize: '40px',
+    // Simple hint text
+    this.touchHint = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 25, 'Drag to move • Tap to launch', {
+      fontSize: '14px',
       color: '#ffffff',
-    }).setAlpha(0.3).setDepth(101);
+    }).setOrigin(0.5).setAlpha(0.4).setDepth(101);
 
-    this.rightIndicator = scene.add.text(GAME_WIDTH - 70, GAME_HEIGHT - 40, '▶', {
-      fontSize: '40px',
-      color: '#ffffff',
-    }).setAlpha(0.3).setDepth(101);
+    // Track touch state
+    let lastTapTime = 0;
 
-    this.centerIndicator = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 35, '▲', {
-      fontSize: '32px',
-      color: '#ffff00',
-    }).setOrigin(0.5).setAlpha(0.3).setDepth(101);
+    // Direct touch/drag control - works anywhere on screen
+    scene.input.on('pointerdown', (pointer) => {
+      const now = Date.now();
 
-    // Touch events
-    this.leftZone.on('pointerdown', () => {
-      this.touchMoving = -1;
-      this.leftIndicator.setAlpha(0.8);
-    });
-    this.leftZone.on('pointerup', () => {
-      this.touchMoving = 0;
-      this.leftIndicator.setAlpha(0.3);
-    });
-    this.leftZone.on('pointerout', () => {
-      this.touchMoving = 0;
-      this.leftIndicator.setAlpha(0.3);
-    });
-
-    this.rightZone.on('pointerdown', () => {
-      this.touchMoving = 1;
-      this.rightIndicator.setAlpha(0.8);
-    });
-    this.rightZone.on('pointerup', () => {
-      this.touchMoving = 0;
-      this.rightIndicator.setAlpha(0.3);
-    });
-    this.rightZone.on('pointerout', () => {
-      this.touchMoving = 0;
-      this.rightIndicator.setAlpha(0.3);
-    });
-
-    // Center tap for launch
-    this.centerZone.on('pointerdown', () => {
-      this.centerIndicator.setAlpha(0.8);
-      // Trigger launch in GameScene
-      if (scene.launchEgg) {
-        scene.launchEgg();
+      // Double-tap detection for dash (within 300ms)
+      if (now - lastTapTime < 300 && this.dashCooldown <= 0) {
+        const direction = pointer.x > this.gameObject.x ? 1 : -1;
+        this.startDash(direction);
       }
-    });
-    this.centerZone.on('pointerup', () => {
-      this.centerIndicator.setAlpha(0.3);
-    });
+      lastTapTime = now;
 
-    // Also allow dragging paddle directly
-    scene.input.on('pointermove', (pointer) => {
-      if (pointer.isDown && pointer.y > GAME_HEIGHT - 200) {
-        // Move paddle toward touch X position
-        const dx = pointer.x - this.gameObject.x;
-        if (Math.abs(dx) > 10) {
-          this.touchMoving = dx > 0 ? 1 : -1;
+      // Start dragging
+      this.touchDragging = true;
+      this.touchTargetX = pointer.x;
+
+      // If egg is not launched and tap is near paddle, launch it
+      if (pointer.y > GAME_HEIGHT - 250) {
+        const hasUnlaunchedEgg = scene.eggs?.some(egg => !egg.launched);
+        if (hasUnlaunchedEgg && scene.launchEgg) {
+          scene.launchEgg();
         }
       }
+    });
+
+    scene.input.on('pointermove', (pointer) => {
+      if (pointer.isDown) {
+        this.touchDragging = true;
+        this.touchTargetX = pointer.x;
+      }
+    });
+
+    scene.input.on('pointerup', () => {
+      this.touchDragging = false;
+      this.touchTargetX = null;
+      this.touchMoving = 0;
+    });
+
+    scene.input.on('pointerupoutside', () => {
+      this.touchDragging = false;
+      this.touchTargetX = null;
+      this.touchMoving = 0;
     });
   }
 
